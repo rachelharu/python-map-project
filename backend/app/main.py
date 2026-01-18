@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from app.features.events.routes import router as events_router
-from app.features.events.models import Base
-from app.db import engine
+from .features.events.routes import router as events_router
+from .features.events.models import Base
+from .db import engine
 
 app = FastAPI(title="Spatial Intel API")
 
