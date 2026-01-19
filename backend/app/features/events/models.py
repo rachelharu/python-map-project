@@ -1,8 +1,6 @@
-from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, DateTime, func
 from geoalchemy2 import Geometry
-
-Base = declarative_base()
+from app.db import Base
 
 class Event(Base):
     __tablename__ = "events"

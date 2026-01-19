@@ -17,8 +17,8 @@ app.add_middleware(
     allow_headers={"*"},
 )
 
-# Create tables on startup (fine for dev; later use migrations)
-Base.metadata.create_all(bind=engine)
+# Schema is managed by Alembic migrations
+# Base.metadata.create_all(bind=engine)
 
 app.include_router(events_router)
 

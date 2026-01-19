@@ -1,26 +1,24 @@
 # Spatial Intel API
 
-A backend service for ingesting geospatial events and performing
-spatial + temporal analysis over them.
+Data analysis project focused on detecting and visualizing geographic trends over time across the United States.
 
-This project focuses on:
-- storing real-world events with location + time
-- querying them efficiently by map bounds
-- detecting changes in activity over time
-- returning map-native GeoJSON outputs
-
-The API is designed to act as the "intelligence layer" behind a map UI.
+The system is designed to ingest real-world datasets, store them in a spatial database (PostGIS), and expose APIs for querying change across space and time. A web frontend visualizes these trends on an interactive map.
 
 ---
 
 ## Tech Stack
-
+**Backend**
 - Python + FastAPI
 - PostgreSQL (Neon)
 - PostGIS
 - SQLAlchemy / GeoAlchemy2
 
 ---
+
+**Frontend**
+- SvelteKit
+- TypeScript
+- MapLibre GL JS
 
 ## What It Currently Does
 
