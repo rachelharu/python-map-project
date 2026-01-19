@@ -48,9 +48,15 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-
 ### Start
+#### backend:
 uvicorn backend.app.main:app --reload
 
 GET /events/in-bbox
+
 GET /events/changes-in-bbox
+
+#### frontend:
+cd frontend/web
+
+npm run dev
