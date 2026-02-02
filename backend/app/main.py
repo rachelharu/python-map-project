@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .features.events.routes import router as events_router
+from backend.app.features.counties.routes import router as counties_router
 from .features.events.models import Base
 from .db import engine
+
+
 
 app = FastAPI(title="Spatial Intel API")
 
@@ -21,6 +24,7 @@ app.add_middleware(
 # Base.metadata.create_all(bind=engine)
 
 app.include_router(events_router)
+app.include_router(counties_router)
 
 @app.get("/")
 def root():

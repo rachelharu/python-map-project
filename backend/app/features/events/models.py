@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, DateTime, func
 from geoalchemy2 import Geometry
-from app.db import Base
+from ...db import Base
 
 class Event(Base):
     __tablename__ = "events"

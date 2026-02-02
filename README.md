@@ -38,7 +38,7 @@ All spatial responses are returned as GeoJSON.
 ### Requirements
 - Python 3.11+
 - PostgreSQL with PostGIS enabled
-- `.env` file with a valid `DATABASE_URL`
+- `backend/.env` file with a valid `DATABASE_URL`
 
 
 ### Setup
@@ -50,9 +50,6 @@ pip install -r requirements.txt
 #### backend:
 uvicorn backend.app.main:app --reload
 
-GET /events/in-bbox
-
-GET /events/changes-in-bbox
 
 #### frontend:
 cd frontend/web

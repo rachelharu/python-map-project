@@ -31,7 +31,7 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", "app", ".env"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
 
 def include_object(object, name, type_, reflected, compare_to):

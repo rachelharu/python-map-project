@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     database_url: str = Field(validation_alias="DATABASE_URL")
 
     model_config = SettingsConfigDict(
-        env_file=Path(__file__).resolve().parent / ".env",
+        env_file=Path(__file__).resolve().parents[1] / ".env",
         case_sensitive=False,
     )
 
