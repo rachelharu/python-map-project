@@ -20,45 +20,45 @@
     };
   }
 
-  async function refreshData() {
-    if (!map) return;
+  // async function refreshData() {
+  //   if (!map) return;
 
-    const bbox = getBBox();
+  //   const bbox = getBBox();
 
-    const pointsRes = await fetch(
-      `${API_BASE}/events/in-bbox-time?` +
-        new URLSearchParams({
-          west: String(bbox.west),
-          south: String(bbox.south),
-          east: String(bbox.east),
-          north: String(bbox.north),
-          start: '2000-01-01T00:00:00Z',
-          end: '2100-01-01T00:00:00Z',
-          limit: '500'
-        })
-    );
-    const points = await pointsRes.json();
+  //   const pointsRes = await fetch(
+  //     `${API_BASE}/events/in-bbox-time?` +
+  //       new URLSearchParams({
+  //         west: String(bbox.west),
+  //         south: String(bbox.south),
+  //         east: String(bbox.east),
+  //         north: String(bbox.north),
+  //         start: '2000-01-01T00:00:00Z',
+  //         end: '2100-01-01T00:00:00Z',
+  //         limit: '500'
+  //       })
+  //   );
+  //   const points = await pointsRes.json();
 
-    const summaryRes = await fetch(
-      `${API_BASE}/events/changes-in-bbox?` +
-        new URLSearchParams({
-          west: String(bbox.west),
-          south: String(bbox.south),
-          east: String(bbox.east),
-          north: String(bbox.north),
-          window_minutes: '1440'
-        })
-    );
-    summary = await summaryRes.json();
+  //   const summaryRes = await fetch(
+  //     `${API_BASE}/events/changes-in-bbox?` +
+  //       new URLSearchParams({
+  //         west: String(bbox.west),
+  //         south: String(bbox.south),
+  //         east: String(bbox.east),
+  //         north: String(bbox.north),
+  //         window_minutes: '1440'
+  //       })
+  //   );
+  //   summary = await summaryRes.json();
 
-    if (map.getSource('events')) {
-      (map.getSource('events') as maplibregl.GeoJSONSource).setData(points);
-    }
-  }
+  //   if (map.getSource('events')) {
+  //     (map.getSource('events') as maplibregl.GeoJSONSource).setData(points);
+  //   }
+  // }
 
   async function refreshCounties() {
     if (!map || !map.getSource('counties')) return;
-    
+
     const b = map.getBounds();
     const url = new URL(`${API_BASE}/counties/in-bbox`);
     url.searchParams.set('west', String(b.getWest()));
@@ -84,25 +84,25 @@
     });
 
     map.on('load', () => {
-      map.addSource('events', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: []
-        }
-      });
+      // map.addSource('events', {
+      //   type: 'geojson',
+      //   data: {
+      //     type: 'FeatureCollection',
+      //     features: []
+      //   }
+      // });
 
-      map.addLayer({
-        id: 'events-layer',
-        type: 'circle',
-        source: 'events',
-        paint: {
-          'circle-radius': 6,
-          'circle-color': '#7dd3fc',
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#000'
-        }
-      });
+      // map.addLayer({
+      //   id: 'events-layer',
+      //   type: 'circle',
+      //   source: 'events',
+      //   paint: {
+      //     'circle-radius': 6,
+      //     'circle-color': '#7dd3fc',
+      //     'circle-stroke-width': 1,
+      //     'circle-stroke-color': '#000'
+      //   }
+      // });
 
       map.addSource('counties', {
         type: 'geojson',
@@ -127,11 +127,11 @@
         }
       });
       refreshCounties();
-      refreshData();
+      // refreshData();
     });
    
     map.on('moveend', () => {
-      refreshData();
+      // refreshData();
       refreshCounties();
     });
   });
