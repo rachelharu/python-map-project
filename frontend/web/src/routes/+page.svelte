@@ -56,6 +56,23 @@
     }
   }
 
+  async function refreshCounties() {
+    if (!map || !map.getSource('counties')) return;
+    
+    const b = map.getBounds();
+    const url = new URL(`${API_BASE}/counties/in-bbox`);
+    url.searchParams.set('west', String(b.getWest()));
+    url.searchParams.set('south', String(b.getSouth()));
+    url.searchParams.set('east', String(b.getEast()));
+    url.searchParams.set('north', String(b.getNorth()));
+    url.searchParams.set('limit', '2000');
+
+    const res = await fetch(url.toString());
+    const geojson = await res.json();
+    const counties = map.getSource('counties') as maplibregl.GeoJSONSource;
+    counties?.setData(geojson);
+  }
+
 // dark/light mode will eventually be toggled 
 // style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
   onMount(() => {
@@ -87,10 +104,36 @@
         }
       });
 
+      map.addSource('counties', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      map.addLayer({
+        id: 'counties-fill',
+        type: 'fill',
+        source: 'counties',
+        paint: {
+          'fill-opacity': 0.15
+        }
+      });
+
+      map.addLayer({
+        id: 'counties-outline',
+        type: 'line',
+        source: 'counties',
+        paint: {
+          'line-width': 1
+        }
+      });
+      refreshCounties();
       refreshData();
     });
-
-    map.on('moveend', refreshData);
+   
+    map.on('moveend', () => {
+      refreshData();
+      refreshCounties();
+    });
   });
 </script>
 
