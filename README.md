@@ -46,6 +46,12 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
+### Testing
+```bash
+pip install pytest
+pytest
+```
+
 ### Start
 #### backend:
 uvicorn backend.app.main:app --reload
@@ -55,3 +61,8 @@ uvicorn backend.app.main:app --reload
 cd frontend/web
 
 npm run dev
+
+#### database changes:
+cd backend
+
+alembic upgrade head
