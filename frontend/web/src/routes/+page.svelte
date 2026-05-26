@@ -8,53 +8,60 @@
   let mapContainer: HTMLDivElement;
   let map: maplibregl.Map;
 
-  let summary: any = null;
+  let periods: string[] = [];
+  let selectedPeriod = '';
+  let selectedCountyGeoid = '';
+  let selectedCountyName = '';
+  let migrationSummary: any = null;
+  let loadingMigration = false;
+  let migrationError = '';
 
-  function getBBox() {
-    const b = map.getBounds();
-    return {
-      west: b.getWest(),
-      south: b.getSouth(),
-      east: b.getEast(),
-      north: b.getNorth()
-    };
+  function formatNumber(value: number | null | undefined) {
+    if (value === null || value === undefined) return 'N/A';
+    return new Intl.NumberFormat('en-US').format(value);
   }
 
-  // async function refreshData() {
-  //   if (!map) return;
+  function formatSignedNumber(value: number | null | undefined) {
+    if (value === null || value === undefined) return 'N/A';
+    const formatted = formatNumber(Math.abs(value));
+    if (value > 0) return `+${formatted}`;
+    if (value < 0) return `-${formatted}`;
+    return formatted;
+  }
 
-  //   const bbox = getBBox();
+  async function loadMigrationPeriods() {
+    const res = await fetch(`${API_BASE}/metadata/migration-periods`);
+    if (!res.ok) return;
 
-  //   const pointsRes = await fetch(
-  //     `${API_BASE}/events/in-bbox-time?` +
-  //       new URLSearchParams({
-  //         west: String(bbox.west),
-  //         south: String(bbox.south),
-  //         east: String(bbox.east),
-  //         north: String(bbox.north),
-  //         start: '2000-01-01T00:00:00Z',
-  //         end: '2100-01-01T00:00:00Z',
-  //         limit: '500'
-  //       })
-  //   );
-  //   const points = await pointsRes.json();
+    const data = await res.json();
+    periods = data.periods ?? [];
+    selectedPeriod = periods.at(-1) ?? '';
+  }
 
-  //   const summaryRes = await fetch(
-  //     `${API_BASE}/events/changes-in-bbox?` +
-  //       new URLSearchParams({
-  //         west: String(bbox.west),
-  //         south: String(bbox.south),
-  //         east: String(bbox.east),
-  //         north: String(bbox.north),
-  //         window_minutes: '1440'
-  //       })
-  //   );
-  //   summary = await summaryRes.json();
+  async function loadCountyMigration(geoid: string) {
+    if (!geoid) return;
 
-  //   if (map.getSource('events')) {
-  //     (map.getSource('events') as maplibregl.GeoJSONSource).setData(points);
-  //   }
-  // }
+    loadingMigration = true;
+    migrationError = '';
+    migrationSummary = null;
+
+    const url = new URL(`${API_BASE}/migration/counties/${geoid}`);
+    if (selectedPeriod) {
+      url.searchParams.set('period', selectedPeriod);
+    }
+
+    try {
+      const res = await fetch(url.toString());
+      if (!res.ok) {
+        migrationError = 'No migration data for this county.';
+        return;
+      }
+
+      migrationSummary = await res.json();
+    } finally {
+      loadingMigration = false;
+    }
+  }
 
   async function refreshCounties() {
     if (!map || !map.getSource('counties')) return;
@@ -66,6 +73,7 @@
     url.searchParams.set('east', String(b.getEast()));
     url.searchParams.set('north', String(b.getNorth()));
     url.searchParams.set('limit', '2000');
+    url.searchParams.set('simplify', '0.002');
 
     const res = await fetch(url.toString());
     const geojson = await res.json();
@@ -73,37 +81,32 @@
     counties?.setData(geojson);
   }
 
-// dark/light mode will eventually be toggled 
-// style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+  function updateSelectedCountyLayer() {
+    if (!map || !map.getLayer('selected-county-outline')) return;
+    map.setFilter('selected-county-outline', ['==', ['get', 'geoid'], selectedCountyGeoid]);
+  }
+
+  function selectCounty(feature: maplibregl.MapGeoJSONFeature) {
+    const geoid = String(feature.properties?.geoid ?? '');
+    if (!geoid) return;
+
+    selectedCountyGeoid = geoid;
+    selectedCountyName = String(feature.properties?.name ?? geoid);
+    updateSelectedCountyLayer();
+    loadCountyMigration(geoid);
+  }
+
   onMount(() => {
+    loadMigrationPeriods();
+
     map = new maplibregl.Map({
       container: mapContainer,
       style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-      center: [-118.2437, 34.0522],
-      zoom: 10
+      center: [-98.5795, 39.8283],
+      zoom: 3.5
     });
 
     map.on('load', () => {
-      // map.addSource('events', {
-      //   type: 'geojson',
-      //   data: {
-      //     type: 'FeatureCollection',
-      //     features: []
-      //   }
-      // });
-
-      // map.addLayer({
-      //   id: 'events-layer',
-      //   type: 'circle',
-      //   source: 'events',
-      //   paint: {
-      //     'circle-radius': 6,
-      //     'circle-color': '#7dd3fc',
-      //     'circle-stroke-width': 1,
-      //     'circle-stroke-color': '#000'
-      //   }
-      // });
-
       map.addSource('counties', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
@@ -114,7 +117,8 @@
         type: 'fill',
         source: 'counties',
         paint: {
-          'fill-opacity': 0.15
+          'fill-color': '#2563eb',
+          'fill-opacity': 0.14
         }
       });
 
@@ -123,58 +127,110 @@
         type: 'line',
         source: 'counties',
         paint: {
-          'line-width': 1
+          'line-color': '#64748b',
+          'line-width': 0.8
         }
       });
+
+      map.addLayer({
+        id: 'selected-county-outline',
+        type: 'line',
+        source: 'counties',
+        filter: ['==', ['get', 'geoid'], ''],
+        paint: {
+          'line-color': '#111827',
+          'line-width': 3
+        }
+      });
+
+      map.on('click', 'counties-fill', (event) => {
+        const feature = event.features?.[0];
+        if (feature) selectCounty(feature);
+      });
+
+      map.on('mouseenter', 'counties-fill', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+
+      map.on('mouseleave', 'counties-fill', () => {
+        map.getCanvas().style.cursor = '';
+      });
+
       refreshCounties();
-      // refreshData();
     });
-   
-    map.on('moveend', () => {
-      // refreshData();
-      refreshCounties();
-    });
+
+    map.on('moveend', refreshCounties);
   });
 </script>
 
 <div class="layout">
   <div bind:this={mapContainer} class="map"></div>
 
-  <div class="panel">
-    <h2>Activity</h2>
+  <aside class="panel">
+    <div class="panel-header">
+      <h1>Migration</h1>
+      <select
+        bind:value={selectedPeriod}
+        disabled={periods.length === 0}
+        onchange={() => loadCountyMigration(selectedCountyGeoid)}
+      >
+        {#if periods.length === 0}
+          <option>No data</option>
+        {:else}
+          {#each periods as period}
+            <option value={period}>{period}</option>
+          {/each}
+        {/if}
+      </select>
+    </div>
 
-    {#if summary}
-      <div class="stat">
-        <span>Current</span>
-        <strong>{summary.current.count}</strong>
-      </div>
-
-      <div class="stat">
-        <span>Previous</span>
-        <strong>{summary.previous.count}</strong>
-      </div>
-
-      <div class="stat">
-        <span>Delta</span>
-        <strong>{summary.delta}</strong>
-      </div>
-
-      <div class="trend {summary.trend}">
-        {summary.trend}
-      </div>
+    {#if selectedCountyName}
+      <div class="county-name">{selectedCountyName}</div>
     {:else}
-      <p>Loading…</p>
+      <div class="empty">Select a county</div>
     {/if}
-  </div>
+
+    {#if loadingMigration}
+      <div class="empty">Loading</div>
+    {:else if migrationError}
+      <div class="empty">{migrationError}</div>
+    {:else if migrationSummary}
+      <div class="stats">
+        <div class="stat">
+          <span>Moved in</span>
+          <strong>{formatNumber(migrationSummary.moved_in)}</strong>
+        </div>
+        <div class="stat">
+          <span>Moved out</span>
+          <strong>{formatNumber(migrationSummary.moved_out)}</strong>
+        </div>
+        <div class="stat primary {migrationSummary.direction}">
+          <span>Net migration</span>
+          <strong>{formatSignedNumber(migrationSummary.net_migration)}</strong>
+        </div>
+      </div>
+
+      <div class="source">
+        ACS {migrationSummary.period} county migration flows
+      </div>
+    {/if}
+  </aside>
 </div>
 
 <style>
+  :global(body) {
+    margin: 0;
+  }
+
   .layout {
     display: grid;
-    grid-template-columns: 1fr 280px;
+    grid-template-columns: minmax(0, 1fr) 320px;
     height: 100vh;
-    background: #0f0f0f;
-    color: #eaeaea;
+    background: #f8fafc;
+    color: #111827;
+    font-family:
+      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
   }
 
   .map {
@@ -183,42 +239,99 @@
   }
 
   .panel {
-    padding: 1rem;
-    background: #181818;
-    border-left: 1px solid #222;
+    padding: 18px;
+    background: #ffffff;
+    border-left: 1px solid #d1d5db;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  select {
+    min-width: 112px;
+    height: 34px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #111827;
+    font: inherit;
+  }
+
+  .county-name {
+    margin-bottom: 18px;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .stats {
+    display: grid;
+    gap: 10px;
   }
 
   .stat {
     display: flex;
+    align-items: baseline;
     justify-content: space-between;
-    margin-bottom: 0.75rem;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e7eb;
   }
 
-  .trend {
-    margin-top: 1rem;
-    padding: 0.5rem;
-    text-align: center;
-    border-radius: 4px;
-    text-transform: uppercase;
-    font-weight: bold;
+  .stat span {
+    color: #475569;
+    font-size: 13px;
   }
 
-  .trend.new {
-    background: #14532d;
-    color: #86efac;
+  .stat strong {
+    font-size: 22px;
+    line-height: 1;
   }
 
-  .trend.up {
-    background: #1e3a8a;
-    color: #93c5fd;
+  .stat.primary strong {
+    font-size: 26px;
   }
 
-  .trend.down {
-    background: #7f1d1d;
-    color: #fca5a5;
+  .stat.primary.gained strong {
+    color: #047857;
   }
 
-  .trend.flat {
-    background: #262626;
+  .stat.primary.lost strong {
+    color: #b91c1c;
+  }
+
+  .empty {
+    color: #64748b;
+    font-size: 14px;
+  }
+
+  .source {
+    margin-top: 18px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 760px) {
+    .layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .panel {
+      border-top: 1px solid #d1d5db;
+      border-left: 0;
+    }
   }
 </style>

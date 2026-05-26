@@ -27,7 +27,6 @@ MANIFEST
 venv/
 ENV/
 env/
-docs/
 data/
 
 *.manifest

@@ -1,19 +1,24 @@
+import os
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
-import os
 from dotenv import load_dotenv
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.db import Base
 from app.features.counties import models as counties_models
 from app.features.events import models as events_models
+from app.features.migration import models as migration_models
 
 from alembic import context
 
 # Import model modules so Alembic autogenerate sees their metadata.
-_ = (counties_models, events_models)
+_ = (counties_models, events_models, migration_models)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

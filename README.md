@@ -1,8 +1,8 @@
 # Spatial Intel API
 
-Data analysis project focused on detecting and visualizing geographic trends over time across the United States.
+Data analysis project focused on detecting and visualizing geographic movement across the United States.
 
-The system is designed to ingest real-world datasets, store them in a spatial database (PostGIS), and expose APIs for querying change across space and time. A web frontend visualizes these trends on an interactive map.
+The system is designed to ingest real-world migration datasets, store them in a spatial database (PostGIS), and expose APIs for querying movement by county. A web frontend visualizes these numbers on an interactive map.
 
 ---
 
@@ -22,14 +22,14 @@ The system is designed to ingest real-world datasets, store them in a spatial da
 
 ## What It Currently Does
 
-The API currently supports:
+The MVP supports:
 
-- Ingesting point-based events (`POST /events`)
-- Querying events within a map bounding box
-- Querying events within a bounding box + time window
-- Detecting changes in activity over time within a region
+- Loading county geometries into PostGIS
+- Ingesting ACS county migration-flow summaries
+- Querying counties within a map bounding box
+- Selecting a county and viewing moved-in, moved-out, and net migration numbers
 
-All spatial responses are returned as GeoJSON.
+County geometry responses are returned as GeoJSON.
 
 ---
 
@@ -66,3 +66,18 @@ npm run dev
 cd backend
 
 alembic upgrade head
+
+#### migration data:
+Set `CENSUS_API_KEY` in `backend/.env`, then run from the repo root:
+
+```bash
+python backend/scripts/ingest_migration_flows.py --source-year 2020
+```
+
+Or, if your shell is already in `backend/`:
+
+```bash
+python scripts/ingest_migration_flows.py --source-year 2020
+```
+
+The Census ACS migration flows API requires a key for this endpoint.
