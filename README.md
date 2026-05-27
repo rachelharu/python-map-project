@@ -1,83 +1,150 @@
-# Spatial Intel API
+# Spatial Intel
 
-Data analysis project focused on detecting and visualizing geographic movement across the United States.
+Spatial Intel is a geospatial migration viewer. It ingests U.S. Census ACS
+migration-flow data, stores county geometry and migration summaries in
+PostgreSQL/PostGIS, and serves a FastAPI API used by a SvelteKit + MapLibre map.
 
-The system is designed to ingest real-world migration datasets, store them in a spatial database (PostGIS), and expose APIs for querying movement by county. A web frontend visualizes these numbers on an interactive map.
+The current MVP lets a user click a U.S. county and view:
 
----
+- moved in
+- moved out
+- net migration
+- ACS migration-flow period
 
 ## Tech Stack
-**Backend**
+
+Backend:
+
 - Python + FastAPI
-- PostgreSQL (Neon)
+- PostgreSQL / Neon
 - PostGIS
 - SQLAlchemy / GeoAlchemy2
+- Alembic
 
----
+Frontend:
 
-**Frontend**
 - SvelteKit
 - TypeScript
 - MapLibre GL JS
 
-## What It Currently Does
+## Data
 
-The MVP supports:
+The MVP uses the Census ACS Migration Flows API. The currently loaded period is
+`2016-2020`, using the `2020` ACS migration-flow endpoint.
 
-- Loading county geometries into PostGIS
-- Ingesting ACS county migration-flow summaries
-- Querying counties within a map bounding box
-- Selecting a county and viewing moved-in, moved-out, and net migration numbers
+For the displayed county summary:
 
-County geometry responses are returned as GeoJSON.
+```text
+moved_in = aggregated Census MOVEDIN
+moved_out = aggregated Census MOVEDOUT
+net_migration = moved_in - moved_out
+```
 
----
+County geometry is loaded separately from Census cartographic boundary data into
+the `counties` PostGIS table.
+
+## API
+
+Current MVP endpoints:
+
+```text
+GET /
+GET /counties/in-bbox
+GET /metadata/migration-periods
+GET /migration/counties/{geoid}?period=2016-2020
+```
+
+Older `/events` endpoints still exist as a reference pattern, but they are not
+the active MVP path.
 
 ## Running Locally
 
 ### Requirements
+
 - Python 3.11+
-- PostgreSQL with PostGIS enabled
-- `backend/.env` file with a valid `DATABASE_URL`
+- Node.js matching `.nvmrc`
+- PostgreSQL with PostGIS enabled, or the existing Neon database
+- `backend/.env` with:
 
+```bash
+DATABASE_URL=...
+CENSUS_API_KEY=...
+```
 
-### Setup
+The Census ACS migration-flow endpoint requires an API key. You can request one
+from Census here:
+
+```text
+https://api.census.gov/data/key_signup.html
+```
+
+### Backend Setup
+
+From the repo root:
+
+```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-
-### Testing
-```bash
-pip install pytest
-pytest
 ```
 
-### Start
-#### backend:
-uvicorn backend.app.main:app --reload
+Apply migrations:
 
-
-#### frontend:
-cd frontend/web
-
-npm run dev
-
-#### database changes:
+```bash
 cd backend
-
 alembic upgrade head
-
-#### migration data:
-Set `CENSUS_API_KEY` in `backend/.env`, then run from the repo root:
-
-```bash
-python backend/scripts/ingest_migration_flows.py --source-year 2020
 ```
 
-Or, if your shell is already in `backend/`:
+Load migration data:
 
 ```bash
 python scripts/ingest_migration_flows.py --source-year 2020
 ```
 
-The Census ACS migration flows API requires a key for this endpoint.
+Start the backend:
+
+```bash
+cd ..
+uvicorn backend.app.main:app --reload
+```
+
+### Frontend Setup
+
+```bash
+cd frontend/web
+npm install
+npm run dev
+```
+
+The frontend expects `frontend/web/.env` to point at the FastAPI backend:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+## Testing
+
+Backend:
+
+```bash
+pytest
+```
+
+Frontend:
+
+```bash
+cd frontend/web
+npm run check
+npm run build
+```
+
+## Known Limitations
+
+- Only `2016-2020` migration-flow data is currently loaded.
+- The ingest skips counties whose Census flow GEOIDs do not match the loaded
+  county geometry table. This currently affects a small number of rows because
+  the flow data and geometry file use different boundary vintages.
+- ACS migration flows are estimates over a 5-year period, not exact annual
+  counts.
+- The current UI shows county-level totals only. Origin and destination
+  breakdowns are future work.
