@@ -178,6 +178,37 @@ npm run check
 npm run build
 ```
 
+## Deployment
+
+Recommended MVP deployment:
+
+- Frontend: Vercel
+- Backend API: Render
+- Database: Neon PostgreSQL/PostGIS
+
+The Render backend uses the production API `Dockerfile`. Its start command is
+equivalent to:
+
+```bash
+uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+```
+
+Run Alembic migrations as a one-off deployment step, not as part of normal app
+startup:
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+Deployment notes and smoke-test steps are in
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+The repo also includes a production API `Dockerfile`. It uses
+`requirements-api.txt`, which intentionally excludes GeoPandas because the
+production API serves already-loaded PostGIS data. Use `requirements.txt` for
+local development and data-loading scripts.
+
 ## Known Limitations
 
 - Only the `2016-2020` ACS migration-flow period is currently loaded.

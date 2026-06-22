@@ -138,6 +138,11 @@ Acceptance:
 - Clicking a county displays migration gain, migration loss, and net gain/loss
 - README includes the production URL and deploy notes
 
+Notes:
+
+- Backend Render blueprint: `render.yaml`
+- Deployment checklist: `docs/DEPLOYMENT.md`
+
 ### Ticket 1 - Migration data model
 
 Goal: represent county-level movement directly.
