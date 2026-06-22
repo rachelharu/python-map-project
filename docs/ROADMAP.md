@@ -109,6 +109,35 @@ GET /migration/counties/{geoid}?period=2016-2020
 
 ## Tickets
 
+### Ticket 0 - Deployment readiness
+
+Goal: deploy the current MVP so it can be shared and listed on a resume.
+
+Tasks:
+
+- Deploy the Svelte frontend as a static/web frontend service
+- Deploy the FastAPI backend as a separate Python web service
+- Keep Neon as the managed Postgres/PostGIS database
+- Verify and clean up `requirements.txt` for backend deployment
+- Add backend deployment config or documented host settings
+- Add frontend deployment config or documented host settings
+- Configure production environment variables
+- Configure CORS for the deployed frontend domain
+- Run Alembic migrations as a one-off deployment step, not inside the app start command
+- Confirm Neon has the required schema and ingested MVP data
+- Add a production smoke-test checklist
+
+Acceptance:
+
+- Deployed frontend loads successfully
+- Deployed frontend can call the deployed FastAPI API
+- Backend service starts with a command equivalent to `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+- `requirements.txt` installs the backend dependencies in a clean environment
+- Alembic migrations can be run manually or as a one-off deploy task before app startup
+- `GET /metadata/migration-periods` returns at least `2016-2020`
+- Clicking a county displays migration gain, migration loss, and net gain/loss
+- README includes the production URL and deploy notes
+
 ### Ticket 1 - Migration data model
 
 Goal: represent county-level movement directly.

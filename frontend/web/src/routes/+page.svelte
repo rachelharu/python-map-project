@@ -29,6 +29,20 @@
     return formatted;
   }
 
+  function netLabel(value: number) {
+    if (value > 0) return 'Net gain';
+    if (value < 0) return 'Net loss';
+    return 'No net change';
+  }
+
+  function netSummary(summary: any) {
+    const net = summary.net_migration;
+    const count = formatNumber(Math.abs(net));
+    if (net > 0) return `${count} more people moved in than out.`;
+    if (net < 0) return `${count} more people moved out than in.`;
+    return 'The number of people moving in and out was equal.';
+  }
+
   async function loadMigrationPeriods() {
     const res = await fetch(`${API_BASE}/metadata/migration-periods`);
     if (!res.ok) return;
@@ -195,18 +209,20 @@
     {:else if migrationError}
       <div class="empty">{migrationError}</div>
     {:else if migrationSummary}
+      <div class="net-card {migrationSummary.direction}">
+        <span>{netLabel(migrationSummary.net_migration)}</span>
+        <strong>{formatSignedNumber(migrationSummary.net_migration)}</strong>
+        <p>{netSummary(migrationSummary)}</p>
+      </div>
+
       <div class="stats">
         <div class="stat">
-          <span>Moved in</span>
+          <span>Migration gain</span>
           <strong>{formatNumber(migrationSummary.moved_in)}</strong>
         </div>
         <div class="stat">
-          <span>Moved out</span>
+          <span>Migration loss</span>
           <strong>{formatNumber(migrationSummary.moved_out)}</strong>
-        </div>
-        <div class="stat primary {migrationSummary.direction}">
-          <span>Net migration</span>
-          <strong>{formatSignedNumber(migrationSummary.net_migration)}</strong>
         </div>
       </div>
 
@@ -280,6 +296,43 @@
     gap: 10px;
   }
 
+  .net-card {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f8fafc;
+  }
+
+  .net-card span {
+    color: #475569;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .net-card strong {
+    color: #334155;
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .net-card p {
+    margin: 0;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .net-card.gained strong {
+    color: #047857;
+  }
+
+  .net-card.lost strong {
+    color: #b91c1c;
+  }
+
   .stat {
     display: flex;
     align-items: baseline;
@@ -297,18 +350,6 @@
   .stat strong {
     font-size: 22px;
     line-height: 1;
-  }
-
-  .stat.primary strong {
-    font-size: 26px;
-  }
-
-  .stat.primary.gained strong {
-    color: #047857;
-  }
-
-  .stat.primary.lost strong {
-    color: #b91c1c;
   }
 
   .empty {
