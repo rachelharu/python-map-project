@@ -15,6 +15,8 @@
   let migrationSummary: any = null;
   let loadingMigration = false;
   let migrationError = '';
+  let loadingCounties = false;
+  let hasLoadedCounties = false;
 
   function formatNumber(value: number | null | undefined) {
     if (value === null || value === undefined) return 'N/A';
@@ -97,10 +99,20 @@
     url.searchParams.set('limit', '2000');
     url.searchParams.set('simplify', '0.002');
 
-    const res = await fetch(url.toString());
-    const geojson = await res.json();
-    const counties = map.getSource('counties') as maplibregl.GeoJSONSource;
-    counties?.setData(geojson);
+    if (!hasLoadedCounties) {
+      loadingCounties = true;
+    }
+    try {
+      const res = await fetch(url.toString());
+      if (!res.ok) return;
+
+      const geojson = await res.json();
+      const counties = map.getSource('counties') as maplibregl.GeoJSONSource;
+      counties?.setData(geojson);
+      hasLoadedCounties = true;
+    } finally {
+      loadingCounties = false;
+    }
   }
 
   function updateSelectedCountyLayer() {
@@ -187,7 +199,12 @@
 </script>
 
 <div class="layout">
-  <div bind:this={mapContainer} class="map"></div>
+  <div class="map-shell">
+    <div bind:this={mapContainer} class="map"></div>
+    {#if loadingCounties}
+      <div class="map-loading">Loading counties</div>
+    {/if}
+  </div>
 
   <aside class="panel">
     <div class="app-header">
@@ -280,6 +297,29 @@
   .map {
     width: 100%;
     height: 100%;
+  }
+
+  .map-shell {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .map-loading {
+    position: absolute;
+    left: 16px;
+    bottom: 20px;
+    z-index: 1;
+    padding: 8px 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: rgb(255 255 255 / 0.94);
+    color: #334155;
+    font-size: 12px;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgb(15 23 42 / 0.12);
   }
 
   .panel {
