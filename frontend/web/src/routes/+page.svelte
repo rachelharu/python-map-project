@@ -43,6 +43,14 @@
     return 'The number of people moving in and out was equal.';
   }
 
+  function inboundShare(summary: any) {
+    const movedIn = summary.moved_in ?? 0;
+    const movedOut = summary.moved_out ?? 0;
+    const total = movedIn + movedOut;
+    if (total <= 0) return 50;
+    return Math.round((movedIn / total) * 100);
+  }
+
   async function loadMigrationPeriods() {
     const res = await fetch(`${API_BASE}/metadata/migration-periods`);
     if (!res.ok) return;
@@ -117,7 +125,7 @@
       container: mapContainer,
       style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
       center: [-98.5795, 39.8283],
-      zoom: 3.5
+      zoom: 4
     });
 
     map.on('load', () => {
@@ -131,8 +139,8 @@
         type: 'fill',
         source: 'counties',
         paint: {
-          'fill-color': '#2563eb',
-          'fill-opacity': 0.14
+          'fill-color': '#0f766e',
+          'fill-opacity': 0.12
         }
       });
 
@@ -141,8 +149,9 @@
         type: 'line',
         source: 'counties',
         paint: {
-          'line-color': '#64748b',
-          'line-width': 0.8
+          'line-color': '#475569',
+          'line-width': 0.65,
+          'line-opacity': 0.55
         }
       });
 
@@ -152,8 +161,8 @@
         source: 'counties',
         filter: ['==', ['get', 'geoid'], ''],
         paint: {
-          'line-color': '#111827',
-          'line-width': 3
+          'line-color': '#0f172a',
+          'line-width': 3.2
         }
       });
 
@@ -181,8 +190,15 @@
   <div bind:this={mapContainer} class="map"></div>
 
   <aside class="panel">
-    <div class="panel-header">
-      <h1>Migration</h1>
+    <div class="app-header">
+      <div>
+        <div class="eyebrow">Spatial Intel</div>
+        <h1>County migration viewer</h1>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <span>ACS period</span>
       <select
         bind:value={selectedPeriod}
         disabled={periods.length === 0}
@@ -198,17 +214,14 @@
       </select>
     </div>
 
-    {#if selectedCountyName}
-      <div class="county-name">{selectedCountyName}</div>
-    {:else}
-      <div class="empty">Select a county</div>
-    {/if}
-
     {#if loadingMigration}
-      <div class="empty">Loading</div>
+      <div class="state-block">Loading migration data</div>
     {:else if migrationError}
-      <div class="empty">{migrationError}</div>
+      <div class="state-block">{migrationError}</div>
     {:else if migrationSummary}
+      <div class="county-kicker">Selected county</div>
+      <div class="county-name">{selectedCountyName}</div>
+
       <div class="net-card {migrationSummary.direction}">
         <span>{netLabel(migrationSummary.net_migration)}</span>
         <strong>{formatSignedNumber(migrationSummary.net_migration)}</strong>
@@ -226,8 +239,23 @@
         </div>
       </div>
 
+      <div class="balance">
+        <div class="balance-labels">
+          <span>In vs. out share</span>
+          <strong>{inboundShare(migrationSummary)}%</strong>
+        </div>
+        <div class="balance-track">
+          <div class="balance-fill" style={`width: ${inboundShare(migrationSummary)}%`}></div>
+        </div>
+      </div>
+
       <div class="source">
         ACS {migrationSummary.period} county migration flows
+      </div>
+    {:else}
+      <div class="state-block">
+        <strong>Select a county</strong>
+        <span>Click a county on the map to inspect migration gain, migration loss, and net movement.</span>
       </div>
     {/if}
   </aside>
@@ -240,10 +268,10 @@
 
   .layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) 360px;
     height: 100vh;
-    background: #f8fafc;
-    color: #111827;
+    background: #e5e7eb;
+    color: #0f172a;
     font-family:
       Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
       sans-serif;
@@ -255,66 +283,104 @@
   }
 
   .panel {
-    padding: 18px;
-    background: #ffffff;
-    border-left: 1px solid #d1d5db;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 22px;
+    background: #f8fafc;
+    border-left: 1px solid #cbd5e1;
+    box-shadow: -12px 0 30px rgb(15 23 42 / 0.08);
   }
 
-  .panel-header {
+  .app-header {
+    padding-bottom: 16px;
+    border-bottom: 1px solid #dbe3ec;
+  }
+
+  .eyebrow {
+    margin-bottom: 6px;
+    color: #0f766e;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .control-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 18px;
+    padding: 10px 0 16px;
+    border-bottom: 1px solid #dbe3ec;
+  }
+
+  .control-row span {
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
   }
 
   h1 {
     margin: 0;
-    font-size: 18px;
-    line-height: 1.2;
+    font-size: 22px;
+    line-height: 1.15;
   }
 
   select {
-    min-width: 112px;
-    height: 34px;
-    border: 1px solid #cbd5e1;
+    min-width: 124px;
+    height: 36px;
+    padding: 0 8px;
+    border: 1px solid #b6c2cf;
     border-radius: 6px;
     background: #ffffff;
-    color: #111827;
+    color: #0f172a;
     font: inherit;
+    font-size: 13px;
+  }
+
+  .county-kicker {
+    margin-bottom: -10px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .county-name {
-    margin-bottom: 18px;
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 1.3;
+    margin-top: -4px;
+    font-size: 21px;
+    font-weight: 800;
+    line-height: 1.2;
   }
 
   .stats {
     display: grid;
-    gap: 10px;
+    gap: 0;
+    border-top: 1px solid #dbe3ec;
   }
 
   .net-card {
     display: grid;
-    gap: 6px;
-    margin-bottom: 18px;
-    padding: 14px;
-    border: 1px solid #e5e7eb;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid #dbe3ec;
     border-radius: 8px;
-    background: #f8fafc;
+    background: #ffffff;
   }
 
   .net-card span {
     color: #475569;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .net-card strong {
-    color: #334155;
-    font-size: 32px;
+    color: #1e293b;
+    font-size: 38px;
     line-height: 1;
   }
 
@@ -338,8 +404,8 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 16px;
-    padding: 12px 0;
-    border-bottom: 1px solid #e5e7eb;
+    padding: 14px 0;
+    border-bottom: 1px solid #dbe3ec;
   }
 
   .stat span {
@@ -348,17 +414,60 @@
   }
 
   .stat strong {
-    font-size: 22px;
+    color: #0f172a;
+    font-size: 24px;
     line-height: 1;
   }
 
-  .empty {
-    color: #64748b;
+  .state-block {
+    display: grid;
+    gap: 6px;
+    padding: 16px;
+    border: 1px dashed #b6c2cf;
+    border-radius: 8px;
+    background: #ffffff;
     font-size: 14px;
+    line-height: 1.45;
+    color: #64748b;
+  }
+
+  .state-block strong {
+    color: #0f172a;
+    font-size: 15px;
+  }
+
+  .balance {
+    display: grid;
+    gap: 8px;
+    padding-top: 2px;
+  }
+
+  .balance-labels {
+    display: flex;
+    justify-content: space-between;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .balance-labels strong {
+    color: #0f172a;
+  }
+
+  .balance-track {
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e2e8f0;
+  }
+
+  .balance-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: #0f766e;
   }
 
   .source {
-    margin-top: 18px;
     color: #64748b;
     font-size: 12px;
     line-height: 1.4;
@@ -373,6 +482,7 @@
     .panel {
       border-top: 1px solid #d1d5db;
       border-left: 0;
+      box-shadow: 0 -12px 24px rgb(15 23 42 / 0.08);
     }
   }
 </style>
