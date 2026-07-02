@@ -202,7 +202,10 @@
   <div class="map-shell">
     <div bind:this={mapContainer} class="map"></div>
     {#if loadingCounties}
-      <div class="map-loading">Loading counties</div>
+      <div class="map-loading" role="status" aria-live="polite">
+        <span class="loading-spinner"></span>
+        <span>Loading counties</span>
+      </div>
     {/if}
   </div>
 
@@ -290,8 +293,8 @@
     background: #e5e7eb;
     color: #0f172a;
     font-family:
-      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-      sans-serif;
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
   }
 
   .map {
@@ -312,14 +315,35 @@
     left: 16px;
     bottom: 20px;
     z-index: 1;
-    padding: 8px 11px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    background: rgb(255 255 255 / 0.94);
-    color: #334155;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 8px 12px;
+    border: 1px solid rgb(15 23 42 / 0.14);
+    border-radius: 999px;
+    background: rgb(248 250 252 / 0.94);
+    color: #1e293b;
     font-size: 12px;
     font-weight: 800;
-    box-shadow: 0 8px 18px rgb(15 23 42 / 0.12);
+    letter-spacing: 0.01em;
+    box-shadow: 0 10px 24px rgb(15 23 42 / 0.14);
+    backdrop-filter: blur(8px);
+  }
+
+  .loading-spinner {
+    width: 13px;
+    height: 13px;
+    border: 2px solid #cbd5e1;
+    border-top-color: #0f766e;
+    border-radius: 999px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .panel {
